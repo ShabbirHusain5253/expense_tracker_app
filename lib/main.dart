@@ -187,15 +187,16 @@ class _MyHomePageState extends State<MyHomePage> {
                     0.32,
                 child: Chart(recentTransaction: _recentTransaction)),
           if (!isLandscape) txListWidget,
-          if (_showChart && isLandscape)
-            SizedBox(
-                height: (mediaQuery.size.height -
-                        appBar.preferredSize.height -
-                        mediaQuery.padding.top) *
-                    0.7,
-                child: Chart(recentTransaction: _recentTransaction))
-          else
-            txListWidget,
+          if (isLandscape)
+            if (_showChart)
+              SizedBox(
+                  height: (mediaQuery.size.height -
+                          appBar.preferredSize.height -
+                          mediaQuery.padding.top) *
+                      0.7,
+                  child: Chart(recentTransaction: _recentTransaction))
+            else
+              txListWidget,
         ],
       ),
     );
