@@ -1,6 +1,8 @@
-import 'dart:math';
+import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+
 import './widgets/new_transaction.dart';
 import './widgets/chart.dart';
 import './widgets/transaction_list.dart';
@@ -31,19 +33,19 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const MyHomePage(null),
+      home: MyHomePage(null),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage(Key? key) : super(key: key);
+  MyHomePage(Key? key) : super(key: key);
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
+class _MyHomePageState extends State<MyHomePage> {
   final List<Transaction> _userTransactions = [
     Transaction(
       id: 't1',
@@ -85,23 +87,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   bool _showChart = false;
 
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    print(state);
-  }
-
-  void dispose() {
-    super.dispose();
-    WidgetsBinding.instance.removeObserver(this);
-  }
-
   List<Transaction> get _recentTransaction {
     return _userTransactions
         .where((tx) => tx.date.isAfter(DateTime.now().subtract(const Duration(
@@ -139,61 +124,32 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     });
   }
 
-  List<Widget> _buildLandscapeContent(
-      MediaQueryData mediaQuery, AppBar appBar, Widget txListWidget) {
-    return [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          const Text('Show Chart'),
-          Switch(
-              value: _showChart,
-              onChanged: (value) {
-                setState(() {
-                  _showChart = value;
-                });
-              })
-        ],
-      ),
-      if (_showChart)
-        SizedBox(
-            height: (mediaQuery.size.height -
-                    appBar.preferredSize.height -
-                    mediaQuery.padding.top) *
-                0.7,
-            child: Chart(recentTransaction: _recentTransaction))
-      else
-        txListWidget,
-    ];
-  }
-
-  List<Widget> _buildPortraitContent(
-      MediaQueryData mediaQuery, AppBar appBar, Widget txListWidget) {
-    return [
-      SizedBox(
-          height: (mediaQuery.size.height -
-                  appBar.preferredSize.height -
-                  mediaQuery.padding.top) *
-              0.32,
-          child: Chart(recentTransaction: _recentTransaction)),
-      txListWidget,
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
 
-    final appBar = AppBar(
-      title: const Text('Expense Tracker App'),
-      actions: [
-        IconButton(
-            onPressed: () => _startAddNewTransaction(context),
-            icon: const Icon(Icons.add))
-      ],
-    );
+    final PreferredSizeWidget appBar = (Platform.isIOS
+        ? CupertinoNavigationBar(
+            middle: const Text('Expense Tracker App'),
+            trailing: Row(
+              children: [
+                CupertinoButton(
+                  child: Icon(CupertinoIcons.add),
+                  onPressed: () => _startAddNewTransaction(context),
+                )
+              ],
+            ),
+          )
+        : AppBar(
+            title: const Text('Expense Tracker App'),
+            actions: [
+              IconButton(
+                  onPressed: () => _startAddNewTransaction(context),
+                  icon: const Icon(Icons.add))
+            ],
+          ) as PreferredSizeWidget);
     final txListWidget = SizedBox(
       height: (mediaQuery.size.height -
               appBar.preferredSize.height -
@@ -204,32 +160,61 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         deleteTransactionHandler: _deleteTransaction,
       ),
     );
-    return Scaffold(
-      appBar: appBar,
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            if (isLandscape)
-              ..._buildLandscapeContent(
-                mediaQuery,
-                appBar,
-                txListWidget,
-              ),
-            if (!isLandscape)
-              ..._buildPortraitContent(
-                mediaQuery,
-                appBar,
-                txListWidget,
-              ),
-          ],
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _startAddNewTransaction(context),
-        child: const Icon(Icons.add),
+    final pageBody = SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          if (isLandscape)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                const Text('Show Chart'),
+                Switch.adaptive(
+                    activeColor: Theme.of(context).accentColor,
+                    value: _showChart,
+                    onChanged: (value) {
+                      setState(() {
+                        _showChart = value;
+                      });
+                    })
+              ],
+            ),
+          if (!isLandscape)
+            SizedBox(
+                height: (mediaQuery.size.height -
+                        appBar.preferredSize.height -
+                        mediaQuery.padding.top) *
+                    0.32,
+                child: Chart(recentTransaction: _recentTransaction)),
+          if (!isLandscape) txListWidget,
+          if (isLandscape)
+            if (_showChart)
+              SizedBox(
+                  height: (mediaQuery.size.height -
+                          appBar.preferredSize.height -
+                          mediaQuery.padding.top) *
+                      0.7,
+                  child: Chart(recentTransaction: _recentTransaction))
+            else
+              txListWidget,
+        ],
       ),
     );
+    return Platform.isIOS
+        ? CupertinoPageScaffold(child: pageBody)
+        : Scaffold(
+            appBar: appBar,
+            body: pageBody,
+            floatingActionButtonLocation:
+                FloatingActionButtonLocation.centerFloat,
+            floatingActionButton: Platform.isIOS
+                ? SizedBox(
+                    height: 0,
+                  )
+                : FloatingActionButton(
+                    onPressed: () => _startAddNewTransaction(context),
+                    child: const Icon(Icons.add),
+                  ),
+          );
   }
 }
