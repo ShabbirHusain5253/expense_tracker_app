@@ -134,6 +134,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ? CupertinoNavigationBar(
             middle: const Text('Expense Tracker App'),
             trailing: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 CupertinoButton(
                   child: Icon(CupertinoIcons.add),
@@ -201,7 +202,10 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
     return Platform.isIOS
-        ? CupertinoPageScaffold(child: pageBody)
+        ? CupertinoPageScaffold(
+            child: pageBody,
+            navigationBar: appBar as ObstructingPreferredSizeWidget,
+          )
         : Scaffold(
             appBar: appBar,
             body: pageBody,
