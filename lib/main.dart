@@ -161,44 +161,65 @@ class _MyHomePageState extends State<MyHomePage> {
         deleteTransactionHandler: _deleteTransaction,
       ),
     );
-    final pageBody = SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          if (isLandscape)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                const Text('Show Chart'),
-                Switch.adaptive(
-                    activeColor: Theme.of(context).accentColor,
-                    value: _showChart,
-                    onChanged: (value) {
-                      setState(() {
-                        _showChart = value;
-                      });
-                    })
-              ],
-            ),
-          if (!isLandscape)
-            SizedBox(
-                height: (mediaQuery.size.height -
-                        appBar.preferredSize.height -
-                        mediaQuery.padding.top) *
-                    0.32,
-                child: Chart(recentTransaction: _recentTransaction)),
-          if (!isLandscape) txListWidget,
-          if (isLandscape)
-            if (_showChart)
-              SizedBox(
-                  height: (mediaQuery.size.height -
-                          appBar.preferredSize.height -
-                          mediaQuery.padding.top) *
-                      0.7,
-                  child: Chart(recentTransaction: _recentTransaction))
-            else
-              txListWidget,
-        ],
+    List<Widget> _buildLandscapeContent(
+      MediaQueryData mediaQuery,
+      PreferredSizeWidget appBar,
+      Widget txListWidget,
+    ) {
+      return [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const Text('Show Chart'),
+            Switch.adaptive(
+                activeColor: Theme.of(context).accentColor,
+                value: _showChart,
+                onChanged: (value) {
+                  setState(() {
+                    _showChart = value;
+                  });
+                })
+          ],
+        ),
+        if (_showChart)
+          SizedBox(
+              height: (mediaQuery.size.height -
+                      appBar.preferredSize.height -
+                      mediaQuery.padding.top) *
+                  0.7,
+              child: Chart(recentTransaction: _recentTransaction))
+        else
+          txListWidget,
+      ];
+    }
+
+    List<Widget> _buildPortraitContent(
+      MediaQueryData mediaQuery,
+      PreferredSizeWidget appBar,
+      Widget txListWidget,
+    ) {
+      return [
+        SizedBox(
+            height: (mediaQuery.size.height -
+                    appBar.preferredSize.height -
+                    mediaQuery.padding.top) *
+                0.32,
+            child: Chart(recentTransaction: _recentTransaction)),
+        txListWidget,
+      ];
+    }
+
+    final pageBody = SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            if (isLandscape)
+              ..._buildLandscapeContent(mediaQuery, appBar, txListWidget),
+            if (!isLandscape)
+              ..._buildPortraitContent(mediaQuery, appBar, txListWidget),
+          ],
+        ),
       ),
     );
     return Platform.isIOS
